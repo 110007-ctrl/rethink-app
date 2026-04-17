@@ -183,7 +183,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:marginStart="16dp">
+            android:layout_marginStart="16dp">
 
             <TextView
                 android:layout_width="match_parent"
@@ -200,7 +200,7 @@
                 android:text="✗ Not registered"
                 android:textSize="12sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                android:marginTop="4dp" />
+                android:layout_marginTop="4dp" />
 
         </LinearLayout>
 
