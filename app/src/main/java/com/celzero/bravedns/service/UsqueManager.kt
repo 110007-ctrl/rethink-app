@@ -92,7 +92,7 @@ object UsqueManager {
             Log.w(TAG, "usque-rs exited with code $exit")
         }
 
-        Log.i(TAG, "WARP tunnel started (pid=${proc.pid()})")
+        Log.i(TAG, "WARP tunnel started")
         true
     } catch (e: Exception) {
         Log.e(TAG, "startWarpTunnel error: ${e.message}", e)
