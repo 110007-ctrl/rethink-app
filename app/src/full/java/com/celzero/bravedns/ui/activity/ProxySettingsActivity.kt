@@ -238,22 +238,31 @@ b.settingsActivityWarpContainer.setOnClickListener {
 
 b.settingsActivityWarpSwitch.setOnCheckedChangeListener { _, checked ->
     if (checked) {
-        // Enable WARP
         if (!UsqueManager.isRegistered(this)) {
-            // Not registered, show dialog
             showWarpRegistrationDialog()
             b.settingsActivityWarpSwitch.isChecked = false
             return@setOnCheckedChangeListener
         }
-        
-        // Already registered, enable it
-        persistentState.usqueEnabled = true
-        b.settingsActivityWarpDesc.text = getString(R.string.warp_status_active)
-        logEvent("WARP Tunnel enabled", "User enabled WARP tunnel")
+        io {
+            val started = UsqueManager.startSocksProxy(this@ProxySettingsActivity)
+            uiCtx {
+                if (started) {
+                    insertSocks5Endpoint(0, UsqueManager.SOCKS_HOST, UsqueManager.SOCKS_PORT,
+                        getString(R.string.settings_app_list_default_app), "", "", false)
+                    persistentState.usqueEnabled = true
+                    b.settingsActivityWarpDesc.text = getString(R.string.warp_status_active)
+                } else {
+                    b.settingsActivityWarpSwitch.isChecked = false
+                    showToastUiCentered(this@ProxySettingsActivity,
+                        "Failed to start WARP proxy", Toast.LENGTH_SHORT)
+                }
+            }
+        }
     } else {
-        // Disable WARP
+        UsqueManager.stopSocksProxy()
+        appConfig.removeProxy(AppConfig.ProxyType.SOCKS5, AppConfig.ProxyProvider.CUSTOM)
         persistentState.usqueEnabled = false
-        logEvent("WARP Tunnel disabled", "User disabled WARP tunnel")
+        b.settingsActivityWarpDesc.text = "Connect to Cloudflare WARP"
     }
 }
 
