@@ -1181,7 +1181,7 @@ b.settingsActivityWarpRegisterBtn.setOnClickListener {
     }
 
     private fun displayWarpUi() {
-        val isEnabled = persistentState.usqueWarpEnabled
+        val isEnabled = persistentState.usqueEnabled
         b.settingsActivityWarpSwitch.isChecked = isEnabled
         if (isEnabled) {
             b.settingsActivityWarpDesc.text = getString(R.string.warp_status_active)
