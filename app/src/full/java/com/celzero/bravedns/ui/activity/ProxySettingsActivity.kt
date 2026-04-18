@@ -1157,20 +1157,42 @@ b.settingsActivityWarpRegisterBtn.setOnClickListener {
     private suspend fun uiCtx(f: suspend () -> Unit) {
         withContext(Dispatchers.Main) { f() }
     }
-    
-    // ===== WARP TUNNEL METHODS =====
 
-private fun showWarpRegistrationDialog() {
-    val builder = MaterialAlertDialogBuilder(this, R.style.App_Dialog_NoDim)
-    builder.setTitle(R.string.warp_register_button)
-    builder.setMessage("Register device with Cloudflare WARP?\n\nThis enables the high-speed WARP tunnel.")
-    builder.setPositiveButton("Register")
-    builder.setNegativeButton("Cancel") { dialog, _ ->
-        dialog.dismiss()
+
+        // ===== WARP TUNNEL METHODS =====
+
+    private fun showWarpRegistrationDialog() {
+        val builder = MaterialAlertDialogBuilder(this, R.style.App_Dialog_NoDim)
+        builder.setTitle(R.string.warp_register_button)
+        builder.setMessage("Register device with Cloudflare WARP?\n\nThis enables the high-speed WARP tunnel.")
+        builder.setPositiveButton("Register") { _, _ ->
+            io {
+                // Perform registration logic
+                UsqueManager.register(this@ProxySettingsActivity)
+                uiCtx {
+                    displayWarpUi()
+                    showToastUiCentered(this@ProxySettingsActivity, "Registration complete", Toast.LENGTH_SHORT)
+                }
+            }
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.dismiss()
+        }
+        builder.setCancelable(true)
+        val dialog = builder.create()
+        dialog.show()
     }
-    builder.setCancelable(true)
-    val dialog = builder.create()
-    dialog.show()
-}
+
+    private fun displayWarpUi() {
+        val isEnabled = persistentState.usqueWarpEnabled
+        b.settingsActivityWarpSwitch.isChecked = isEnabled
+        if (isEnabled) {
+            b.settingsActivityWarpDesc.text = getString(R.string.warp_status_active)
+        } else {
+            b.settingsActivityWarpDesc.text = "Connect to Cloudflare WARP tunnel"
+        }
+    }
+} // <--- This closes the ProxySettingsActivity class
+
 
 
