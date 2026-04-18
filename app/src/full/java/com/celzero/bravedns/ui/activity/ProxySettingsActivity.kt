@@ -254,7 +254,6 @@ b.settingsActivityWarpSwitch.setOnCheckedChangeListener { _, checked ->
     } else {
         // Disable WARP
         persistentState.usqueWarpEnabled = false
-        b.settingsActivityWarpDesc.text = getString(R.string.warp_status_inactive)
         logEvent("WARP Tunnel disabled", "User disabled WARP tunnel")
     }
 }
