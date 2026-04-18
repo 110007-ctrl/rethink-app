@@ -1178,7 +1178,6 @@ private fun showWarpRegistrationDialog() {
 
 private fun startWarpRegistration() {
     val progressDialog = ProgressDialog(this)
-    progressDialog.setTitle(R.string.warp_registration_in_progress)
     progressDialog.setMessage("Registering with WARP service...")
     progressDialog.setCancelable(false)
     progressDialog.show()
