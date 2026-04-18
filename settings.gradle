@@ -1,2 +1,10 @@
-rootProject.name='Bravedns'
-include ':app',':tun2socks'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'Bravedns'
+include ':app', ':tun2socks'
