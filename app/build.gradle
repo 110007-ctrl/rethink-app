@@ -38,6 +38,8 @@ if (!deGoogled) {
     println("app firebase plugins applied")
 } else {
     println("app firebase plugins SKIPPED")
+    apply plugin: 'com.google.gms.google-services'
+    apply plugin: 'com.google.firebase.crashlytics'
 }
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
