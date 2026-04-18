@@ -82,7 +82,7 @@ class PersistentState(context: Context) : SimpleKrate(context), KoinComponent {
         const val USE_MAX_MTU = "use_max_mtu"
         const val SET_VPN_BUILDER_TO_METERED = "set_vpn_builder_to_metered"
         const val PANIC_RANDOM = "panic_random"
-        const val USQUE_WARP_ENABLED = "usque_warp_enabled"
+
 
         // SE Proxy for Anti-Censorship
         const val AUTO_PROXY_ENABLED = "auto_proxy_enabled"
@@ -91,7 +91,7 @@ class PersistentState(context: Context) : SimpleKrate(context), KoinComponent {
         const val CUSTOM_LAN_MODE_IPS_CHANGED = "custom_lan_mode_ip_changed"
 
         const val FIREWALL_BUBBLE = "pref_firewall_bubble_enabled"
-        const val USQUE_WARP_ENABLED = "usque_warp_enabled"
+    
     }
 
     // when vpn is started by the user, this is set to true; set to false when user stops
@@ -438,7 +438,6 @@ class PersistentState(context: Context) : SimpleKrate(context), KoinComponent {
 
     // global lockdown for wireguard proxy
     var wgGlobalLockdown by booleanPref("wg_global_lockdown").withDefault<Boolean>(false)
-    var usqueWarpEnabled by booleanPref(USQUE_WARP_ENABLED).withDefault<Boolean>(false)
 
     var orbotConnectionStatus: MutableLiveData<Boolean> = MutableLiveData()
     var vpnEnabledLiveData: MutableLiveData<Boolean> = MutableLiveData()
