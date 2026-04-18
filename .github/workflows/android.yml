@@ -44,12 +44,11 @@ jobs:
         fi
 
     - name: 🚂 Build with Gradle
-      run: |
-        ./gradlew \
-          ${{ env.VARIANT }} \
-          --info \
-          --stacktrace \
-          --warning-mode all
+      uses: nick-fields/retry@v3
+      with:
+        timeout_minutes: 15
+        max_attempts: 3
+        command: ./gradlew ${{ env.VARIANT }} --info --warning-mode all
 
     - name: 🔍 Find APK
       run: find app/build/outputs/apk/ -name "*.apk"
