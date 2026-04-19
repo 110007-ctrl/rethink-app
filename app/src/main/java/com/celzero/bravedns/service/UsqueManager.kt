@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 object UsqueManager {
     const val SOCKS_HOST = "127.0.0.1"
     const val SOCKS_PORT = 40000
-    private const val BINARY_NAME = "usque-rs-arm32"
+    private const val BINARY_NAME = "usque-rs-arm64"
     private var process: Process? = null
 
     fun isRegistered(ctx: Context): Boolean {
