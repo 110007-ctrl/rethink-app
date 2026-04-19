@@ -18,92 +18,39 @@ object UsqueManager {
         return File(ctx.filesDir, "config.json").exists()
     }
 
-/**    suspend fun registerWithWarp(ctx: Context): Boolean = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val bin = copyBinary(ctx)
-            if (bin == null) {
-            Log.e(TAG, "registerWithWarp: binary is null — asset not found or extraction failed")
-            return@withContext false
-        }
-        /**    val proc = ProcessBuilder(bin.absolutePath, "register")
-                .redirectErrorStream(true)
-                .start()
-            proc.waitFor(30, TimeUnit.SECONDS) && proc.exitValue() == 0
-        } catch (e: Exception) {
-            Logger.e(LOG_TAG_PROXY, "usque register failed: ${e.message}", e)
-            false
-        }**/
-
-                val configFile = ensureConfigFile(context)
-        Log.i(TAG, "registerWithWarp: config path=${configFile.absolutePath}")
-
-        val cmd = listOf(bin.absolutePath, "register", "-c", configFile.absolutePath)
-        Log.i(TAG, "registerWithWarp: running cmd=${cmd.joinToString(" ")}")
-
-        val proc = ProcessBuilder(cmd).redirectErrorStream(true).start()
-        val output = proc.inputStream.bufferedReader().readText()
-        val exit = proc.waitFor()
-
-        Log.i(TAG, "registerWithWarp: exit=$exit output=$output configExists=${configFile.exists()} configSize=${configFile.length()}")
-
-        exit == 0 && configFile.exists() && configFile.length() > 0L
-    } catch (e: Exception) {
-        Log.e(TAG, "registerWithWarp failed: ${e.message}", e)
-        false
-    } **/
 
 
 
-
-
-   /**     val configFile = ensureConfigFile(context)
-        Log.i(TAG, "registerWithWarp: config path=${configFile.absolutePath}")
-
-        val cmd = listOf(bin.absolutePath, "register", "-c", configFile.absolutePath)
-        Log.i(TAG, "registerWithWarp: running cmd=${cmd.joinToString(" ")}")
-
-        val proc = ProcessBuilder(cmd).redirectErrorStream(true).start()
-        val output = proc.inputStream.bufferedReader().readText()
-        val exit = proc.waitFor()
-
-        Log.i(TAG, "registerWithWarp: exit=$exit output=$output configExists=${configFile.exists()} configSize=${configFile.length()}")
-
-        exit == 0 && configFile.exists() && configFile.length() > 0L
-    } catch (e: Exception) {
-        Log.e(TAG, "registerWithWarp failed: ${e.message}", e)
-        false
-    }**/
-    }
-
-
-
-    suspend fun registerWithWarp(context: Context): Boolean = withContext(Dispatchers.IO) {
+suspend fun registerWithWarp(context: Context): Boolean = withContext(Dispatchers.IO) {
     try {
-        val bin = extractBinary(context)
-        if (bin == null) {
-            Log.e(TAG, "registerWithWarp: binary is null — asset not found or extraction failed")
-            return@withContext false
-        }
-        Log.i(TAG, "registerWithWarp: binary path=${bin.absolutePath} exists=${bin.exists()} canExecute=${bin.canExecute()}")
-        
-        val configFile = ensureConfigFile(context)
-        Log.i(TAG, "registerWithWarp: config path=${configFile.absolutePath}")
+        val bin = copyBinary(context)
+        Logger.i(LOG_TAG_PROXY, "usque register: path=${bin.absolutePath} canExec=${bin.canExecute()}")
 
+        val configFile = File(context.filesDir, "config.json")
         val cmd = listOf(bin.absolutePath, "register", "-c", configFile.absolutePath)
-        Log.i(TAG, "registerWithWarp: running cmd=${cmd.joinToString(" ")}")
+        Logger.i(LOG_TAG_PROXY, "usque register cmd: ${cmd.joinToString(" ")}")
 
-        val proc = ProcessBuilder(cmd).redirectErrorStream(true).start()
+        val proc = ProcessBuilder(cmd)
+            .redirectErrorStream(true)
+            .start()
+
+        // Answer "y" to the Terms of Service prompt
+        proc.outputStream.bufferedWriter().use { it.write("y\n"); it.flush() }
+
         val output = proc.inputStream.bufferedReader().readText()
         val exit = proc.waitFor()
 
-        Log.i(TAG, "registerWithWarp: exit=$exit output=$output configExists=${configFile.exists()} configSize=${configFile.length()}")
+        Logger.i(LOG_TAG_PROXY, "usque register exit=$exit output=$output")
+        Logger.i(LOG_TAG_PROXY, "config exists=${configFile.exists()} size=${configFile.length()}")
 
         exit == 0 && configFile.exists() && configFile.length() > 0L
     } catch (e: Exception) {
-        Log.e(TAG, "registerWithWarp failed: ${e.message}", e)
+        Logger.e(LOG_TAG_PROXY, "usque register failed: ${e.message}", e)
         false
     }
 }
+
+    
 
     suspend fun startSocksProxy(ctx: Context): Boolean = withContext(Dispatchers.IO) {
         stopSocksProxy()
