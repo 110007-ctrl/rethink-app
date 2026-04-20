@@ -6,6 +6,7 @@ import android.content.Context
 import android.util.Log
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import java.io.File
+import java.io.StringWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -15,13 +16,32 @@ object UsqueManager {
     private const val BINARY_NAME = "libusque.so"
     private var process: Process? = null
 
+    // ── debug log file ────────────────────────────────────────────────────────
+    private fun dlog(ctx: Context, msg: String) {
+        Log.d("WARP_DEBUG", msg)
+        try {
+            File(ctx.filesDir, "warp_debug.txt").appendText("${System.currentTimeMillis()} $msg\n")
+        } catch (_: Exception) {}
+    }
+
+    fun readDebugLog(ctx: Context): String {
+        return try {
+            val f = File(ctx.filesDir, "warp_debug.txt")
+            if (f.exists()) f.readText() else "log file not found"
+        } catch (e: Exception) {
+            "error reading log: ${e.message}"
+        }
+    }
+
+    fun clearDebugLog(ctx: Context) {
+        try { File(ctx.filesDir, "warp_debug.txt").delete() } catch (_: Exception) {}
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     private fun getBinary(ctx: Context): File {
         val nativeDir = ctx.applicationInfo.nativeLibraryDir
         val bin = File(nativeDir, BINARY_NAME)
-        Log.d("WARP_DEBUG", "getBinary: path=${bin.absolutePath}")
-        Log.d("WARP_DEBUG", "getBinary: exists=${bin.exists()}")
-        Log.d("WARP_DEBUG", "getBinary: canExec=${bin.canExecute()}")
-        Log.d("WARP_DEBUG", "getBinary: size=${bin.length()}")
+        dlog(ctx, "getBinary: path=${bin.absolutePath} exists=${bin.exists()} canExec=${bin.canExecute()} size=${bin.length()}")
         return bin
     }
 
@@ -31,48 +51,96 @@ object UsqueManager {
         return f.exists() && f.length() > 0L
     }
 
-
-
-
-
-    
-
-    suspend fun startSocksProxy(ctx: Context): Boolean = withContext(Dispatchers.IO) {
-        Log.d("WARP_DEBUG", "startSocksProxy: >>>ENTRY<<<")
-        stopSocksProxy()
+    suspend fun registerWithWarp(context: Context): Boolean = withContext(Dispatchers.IO) {
+        clearDebugLog(context)
+        dlog(context, "registerWithWarp: >>>ENTRY<<<")
         try {
-            val bin = getBinary(ctx)
+            val bin = getBinary(context)
 
-            if (!bin.exists() || !bin.canExecute()) {
-                Log.d("WARP_DEBUG", "startSocksProxy: binary not ready exists=${bin.exists()} canExec=${bin.canExecute()}")
+            if (!bin.exists()) {
+                dlog(context, "BINARY NOT FOUND — put libusque.so in jniLibs/arm64-v8a/")
+                return@withContext false
+            }
+            if (!bin.canExecute()) {
+                dlog(context, "BINARY NOT EXECUTABLE — W^X policy?")
                 return@withContext false
             }
 
-            val cmd = listOf(
-                bin.absolutePath, "socks",
-                "-b", SOCKS_HOST,
-                "-p", SOCKS_PORT.toString()
-            )
-            Log.d("WARP_DEBUG", "startSocksProxy: cmd=${cmd.joinToString(" ")}")
+            val configFile = File(context.filesDir, "config.json")
+            if (configFile.exists()) {
+                configFile.delete()
+                dlog(context, "deleted old config.json")
+            }
 
-            process = ProcessBuilder(cmd)
-                .redirectErrorStream(true)
+            val cmd = listOf(bin.absolutePath, "register", "-c", configFile.absolutePath)
+            dlog(context, "cmd=${cmd.joinToString(" ")}")
+
+            val proc = ProcessBuilder(cmd)
+                .redirectErrorStream(false)
                 .start()
 
+            proc.outputStream.bufferedWriter().use { w -> w.write("y\n"); w.flush() }
+
+            // read stdout and stderr concurrently to avoid deadlock
+            val stdoutWriter = StringWriter()
+            val stderrWriter = StringWriter()
+
+            val stdoutThread = Thread {
+                try { stdoutWriter.write(proc.inputStream.bufferedReader().readText()) } catch (_: Exception) {}
+            }.also { it.start() }
+
+            val stderrThread = Thread {
+                try { stderrWriter.write(proc.errorStream.bufferedReader().readText()) } catch (_: Exception) {}
+            }.also { it.start() }
+
+            val exit = proc.waitFor()
+            stdoutThread.join(3000)
+            stderrThread.join(3000)
+
+            dlog(context, "exit=$exit")
+            dlog(context, "stdout=${stdoutWriter}")
+            dlog(context, "stderr=${stderrWriter}")
+            dlog(context, "configExists=${configFile.exists()} size=${configFile.length()}")
+
+            val ok = exit == 0 && configFile.exists() && configFile.length() > 0L
+            dlog(context, "result=$ok")
+            ok
+
+        } catch (e: Exception) {
+            dlog(context, "EXCEPTION ${e.message}\n${e.stackTraceToString()}")
+            try { FirebaseCrashlytics.getInstance().recordException(e) } catch (_: Exception) {}
+            false
+        }
+    }
+
+    suspend fun startSocksProxy(ctx: Context): Boolean = withContext(Dispatchers.IO) {
+        dlog(ctx, "startSocksProxy: >>>ENTRY<<<")
+        stopSocksProxy()
+        try {
+            val bin = getBinary(ctx)
+            if (!bin.exists() || !bin.canExecute()) {
+                dlog(ctx, "startSocksProxy: binary not ready exists=${bin.exists()} canExec=${bin.canExecute()}")
+                return@withContext false
+            }
+
+            val cmd = listOf(bin.absolutePath, "socks", "-b", SOCKS_HOST, "-p", SOCKS_PORT.toString())
+            dlog(ctx, "startSocksProxy: cmd=${cmd.joinToString(" ")}")
+
+            process = ProcessBuilder(cmd).redirectErrorStream(true).start()
             Thread.sleep(800)
             val alive = process?.isAlive == true
-            Log.d("WARP_DEBUG", "startSocksProxy: alive=$alive")
+            dlog(ctx, "startSocksProxy: alive=$alive")
             alive
 
         } catch (e: Exception) {
-            Log.e("WARP_DEBUG", "startSocksProxy: EXCEPTION ${e.message}", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
+            dlog(ctx, "startSocksProxy: EXCEPTION ${e.message}")
+            try { FirebaseCrashlytics.getInstance().recordException(e) } catch (_: Exception) {}
             false
         }
     }
 
     fun stopSocksProxy() {
-        Log.d("WARP_DEBUG", "stopSocksProxy: called isAlive=${process?.isAlive}")
+        Log.d("WARP_DEBUG", "stopSocksProxy: isAlive=${process?.isAlive}")
         process?.destroy()
         process = null
     }
