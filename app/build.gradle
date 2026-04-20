@@ -53,7 +53,7 @@ def getVersionCode = {
 }
 
 android {
-    compileSdkVersion(35) // Recommended for current stable builds
+    compileSdkVersion(35)
     namespace 'com.celzero.bravedns'
 
     defaultConfig {
@@ -61,6 +61,13 @@ android {
         minSdkVersion(23)
         targetSdkVersion 35
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // ✅ ADDED: allows libusque.so in jniLibs to be executed at runtime (W^X fix)
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 
     // Updated ABI Versioning for Gradle 8.13 / AGP 8.7+ compatibility
